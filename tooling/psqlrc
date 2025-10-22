@@ -1,0 +1,5 @@
+\set QUIET 1
+	iming on
+\pset pager off
+\pset format aligned
+\set QUIET 0

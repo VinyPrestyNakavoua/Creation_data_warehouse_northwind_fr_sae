@@ -1,0 +1,2 @@
+# Exemple de cron (rafraîchissement à 2h00)
+0 2 * * * cd /path/to/project && ./etl/scripts/run_all.sh >> etl/jobs/last_run.log 2>&1

@@ -1,0 +1,2 @@
+-- Définition de jobs pgAgent (à adapter à votre instance)
+-- Voir doc pgAgent pour CREATE JOB / STEPS / SCHEDULES

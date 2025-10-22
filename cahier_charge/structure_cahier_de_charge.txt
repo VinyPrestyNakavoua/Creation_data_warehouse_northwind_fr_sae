@@ -1,0 +1,27 @@
+idée :
+- analyse fonctionnel
+- besoin
+- etude de faisabilité
+- analyse technique
+
+organisation :
+- quel outil
+- qui
+- quand
+- comment
+- combien de temps
+- penser au diagramme de gantt, de vett
+- WBS
+
+le cahier de charges qu'on va concevoir sera composé de : idée et organisation
+
+technique/réalisation
+- dev
+- achat d'un logiciel
+- tests
+- validation
+
+bilan
+partie qu'on va faire en ensemble après la réalisation du projet
+
+
