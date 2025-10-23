@@ -1,0 +1,32 @@
+
+-- 00_from_zero.psql
+-- Démarrage "from scratch" avec psql (PostgreSQL déjà installé en local)
+-- À exécuter depuis la **racine du projet** :
+--   psql -U postgres -d postgres -f sql/bootstrap/00_from_zero.psql
+-- (adaptez -U et -d selon votre rôle/DB d'admin)
+
+-- 1) créer la base (échouera si elle existe déjà — ignorer à la 2e exécution)
+CREATE DATABASE northwind_fr_sae WITH TEMPLATE=template1 ENCODING='UTF8';
+
+-- 2) se connecter à la base cible
+\connect northwind_fr_sae
+
+-- 3) init schémas & extensions
+\i sql/bootstrap/01_init_schemas.sql
+
+-- 4) opérationnel
+\i sql/source_oltp/01_create_tables.sql
+\i sql/source_oltp/02_create_views.sql
+
+-- 5) DWH (création + chargement)
+\i sql/dwh/01_creation_dwh.sql
+\i sql/dwh/02_chargement_dwh.sql
+
+-- 6) vues DWH
+\i sql/dwh/03_vues_dwh.sql
+
+-- 7) maintenance & tests
+\i sql/maintenance/10_indexes.sql
+\i tests/dq/t01_fk_non_null.sql
+\i tests/dq/t02_no_dup_keys.sql
+\i tests/dq/t03_metrics_consistency.sql

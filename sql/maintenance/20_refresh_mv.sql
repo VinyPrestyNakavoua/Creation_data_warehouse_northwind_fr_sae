@@ -1,2 +1,0 @@
--- Exemple de refresh de vues matérialisées (si vous en créez)
--- REFRESH MATERIALIZED VIEW CONCURRENTLY dw.mv_f3_ca_par_pays;

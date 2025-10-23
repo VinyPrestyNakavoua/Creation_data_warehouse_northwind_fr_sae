@@ -1,14 +1,6 @@
-# OS
 .DS_Store
 Thumbs.db
-
-# Python/Notebooks
-__pycache__/
 .ipynb_checkpoints/
-
-# Env
+__pycache__/
 .env
-
-# Build/Artifacts
 *.zip
-*/initdb/*.log

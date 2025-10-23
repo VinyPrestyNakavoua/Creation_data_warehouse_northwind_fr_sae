@@ -1,3 +1,7 @@
+-- Forcer le schéma opérationnel
+CREATE SCHEMA IF NOT EXISTS operationnel;
+SET search_path TO operationnel, public;
+
 -- - F1 : Liste decroissante des produits avec les plus grosses remises avec le client concerne et l information sur le nom de l employe de la commande
 CREATE OR REPLACE VIEW public.v_f1_remises_produits AS
 SELECT
