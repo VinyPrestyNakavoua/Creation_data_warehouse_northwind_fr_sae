@@ -16,24 +16,25 @@ Projet clé en main pour construire un entrepôt Northwind FR :
 
 ---
 
-## 🚀 Démarrage « from scratch » (1 seule commande)
+## Création de la base de données
 
-la procédure est décrit dans le fichier **devtools/installation_guide_DBS.md**
+la procédure est décrit dans le fichier **devtools/installation_guide_DBS.md**. 
+En résumé, les fichiers `run_from_zero.sh` et `run_from_zero.ps1` selon le OS, lance toute la création de la base de données.
 
-## 🔧 Variables d’environnement
+### Linux / Windows (**avec** Git Bash)
 
-**`.env`** :
-
-```
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=northwind
-PGUSER=postgres
-PGPASSWORD=MDP
-ADMINDB=postgres
+```bash
+chmod +x devtools/run_from_zero.sh
+./devtools/run_from_zero.sh
 ```
 
-`run_from_zero.sh`  ou `run_from_zero.ps1` selon le OS, lira ces valeurs automatiquement.
+## Windows (**sans** Git Bash) — PowerShell
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+.\devtools\run_from_zero.ps1
+```
+
 
 ---
 
@@ -100,9 +101,8 @@ ADMINDB=postgres
 
 ---
 
-## 🆘 Dépannage rapide
+## Dépannage rapide
 
 * `psql: command not found` → installe PostgreSQL/psql.
 * `could not connect` → vérifie `PGHOST/PGPORT` et que Postgres est **up**.
-* Conflit de port `5432` → utilise `5433:5432` (Docker) + `PGPORT=5433` dans `.env`.
-* 2ᵉ exécution “from scratch” → l’étape `CREATE DATABASE` peut échouer (base existante) : ignorer, ou `dropdb northwind_fr_sae`.
+* 2ᵉ exécution “from scratch” → l’étape `CREATE DATABASE` peut échouer (base existante) : ignorer, ou `dropdb northwind `.
