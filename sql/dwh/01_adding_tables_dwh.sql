@@ -1,13 +1,12 @@
 -- ==============================================
--- 01_creation_dwh.sql
--- Schéma & tables du Data Warehouse (PostgreSQL) — schema dwh
+-- 01_creation_dwh.sql — Schéma & tables DWH
 -- ==============================================
 
 CREATE SCHEMA IF NOT EXISTS dwh;
 
--- dim_date
+-- ---------- Dimensions ----------
 CREATE TABLE IF NOT EXISTS dwh.dim_date (
-  date_key      int PRIMARY KEY,
+  date_key      int PRIMARY KEY,            -- yyyymmdd
   full_date     date NOT NULL,
   year          int  NOT NULL,
   quarter       int  NOT NULL,
@@ -18,7 +17,6 @@ CREATE TABLE IF NOT EXISTS dwh.dim_date (
   is_weekend    boolean NOT NULL
 );
 
--- dim_client
 CREATE TABLE IF NOT EXISTS dwh.dim_client (
   client_key    int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   codecli       text UNIQUE,
@@ -30,7 +28,6 @@ CREATE TABLE IF NOT EXISTS dwh.dim_client (
   codepostal    text
 );
 
--- dim_employe
 CREATE TABLE IF NOT EXISTS dwh.dim_employe (
   employe_key   int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   noemp         int UNIQUE,
@@ -42,7 +39,6 @@ CREATE TABLE IF NOT EXISTS dwh.dim_employe (
   region        text
 );
 
--- dim_fournisseur
 CREATE TABLE IF NOT EXISTS dwh.dim_fournisseur (
   fournisseur_key int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   nofourn         int UNIQUE,
@@ -52,21 +48,18 @@ CREATE TABLE IF NOT EXISTS dwh.dim_fournisseur (
   region          text
 );
 
--- dim_categorie
 CREATE TABLE IF NOT EXISTS dwh.dim_categorie (
   categorie_key int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   codecateg     int UNIQUE,
   nomcateg      text
 );
 
--- dim_transporteur
 CREATE TABLE IF NOT EXISTS dwh.dim_transporteur (
   transporteur_key int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   notran           int UNIQUE,
   nomtran          text
 );
 
--- dim_geo_livraison
 CREATE TABLE IF NOT EXISTS dwh.dim_geo_livraison (
   geo_key      int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   pays         text,
@@ -74,7 +67,6 @@ CREATE TABLE IF NOT EXISTS dwh.dim_geo_livraison (
   ville        text
 );
 
--- dim_produit
 CREATE TABLE IF NOT EXISTS dwh.dim_produit (
   produit_key     int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   refprod         int UNIQUE,
@@ -84,10 +76,21 @@ CREATE TABLE IF NOT EXISTS dwh.dim_produit (
   fournisseur_key int REFERENCES dwh.dim_fournisseur(fournisseur_key)
 );
 
--- fact_ventes (grain = ligne de commande)
+-- ---------- Fait VENTES (grain = ligne de commande) ----------
 CREATE TABLE IF NOT EXISTS dwh.fact_ventes (
   fact_ventes_id   bigserial PRIMARY KEY,
-  nocom            int NOT NULL,
+  -- clé dégénérée (utile en analyse)
+  nocom            text NOT NULL,
+
+  -- FKs (NOT NULL) : la date de commande et les dimensions
+  datecom_key      int NOT NULL REFERENCES dwh.dim_date(date_key),
+  client_key       int NOT NULL REFERENCES dwh.dim_client(client_key),
+  employe_key      int NOT NULL REFERENCES dwh.dim_employe(employe_key),
+  produit_key      int NOT NULL REFERENCES dwh.dim_produit(produit_key),
+  transporteur_key int REFERENCES dwh.dim_transporteur(transporteur_key),
+  geo_key          int REFERENCES dwh.dim_geo_livraison(geo_key),
+
+  -- Mesures au niveau ligne
   refprod          int NOT NULL,
   ligne_qte        int,
   ligne_prix_unit  numeric(12,2),
@@ -95,35 +98,42 @@ CREATE TABLE IF NOT EXISTS dwh.fact_ventes (
   montant_brut     numeric(14,2),
   montant_remise   numeric(14,2),
   montant_net      numeric(14,2),
-  datecom_key      int REFERENCES dwh.dim_date(date_key),
-  client_key       int REFERENCES dwh.dim_client(client_key),
-  employe_key      int REFERENCES dwh.dim_employe(employe_key),
-  produit_key      int REFERENCES dwh.dim_produit(produit_key),
-  categorie_key    int REFERENCES dwh.dim_categorie(categorie_key),
-  fournisseur_key  int REFERENCES dwh.dim_fournisseur(fournisseur_key),
-  transporteur_key int REFERENCES dwh.dim_transporteur(transporteur_key),
-  geo_key          int REFERENCES dwh.dim_geo_livraison(geo_key)
+  port_reparti     numeric(14,2),
+
+  -- Unicité logique de la ligne (si pas de N° de ligne, (nocom, refprod) suffit)
+  UNIQUE (nocom, refprod)
 );
 
--- fact_livraisons (grain = commande expédiée)
+CREATE INDEX IF NOT EXISTS ix_fact_ventes_dimkeys
+  ON dwh.fact_ventes (datecom_key, client_key, employe_key, produit_key, transporteur_key, geo_key);
+
+-- ---------- Fait LIVRAISONS (grain = ligne expédiée) ----------
 CREATE TABLE IF NOT EXISTS dwh.fact_livraisons (
   fact_livraisons_id bigserial PRIMARY KEY,
-  nocom              int UNIQUE,
-  frais_port         numeric(12,2),
-  qte_totale         int,
-  delai_expedition_jours int,
-  ecart_obj_liv_jours   int,
-  datecom_key        int REFERENCES dwh.dim_date(date_key),
-  dateenv_key        int REFERENCES dwh.dim_date(date_key),
-  dateobjliv_key     int REFERENCES dwh.dim_date(date_key),
+
+  -- clé dégénérée
+  nocom              text NOT NULL,
+
+  -- FKs (rôles de dates) : objectif vs envoi réel
+  dateobjliv_key     int NOT NULL REFERENCES dwh.dim_date(date_key),
+  dateenv_key        int NOT NULL REFERENCES dwh.dim_date(date_key),
+
+  produit_key        int NOT NULL REFERENCES dwh.dim_produit(produit_key),
   transporteur_key   int REFERENCES dwh.dim_transporteur(transporteur_key),
   geo_key            int REFERENCES dwh.dim_geo_livraison(geo_key),
   employe_key        int REFERENCES dwh.dim_employe(employe_key),
-  client_key         int REFERENCES dwh.dim_client(client_key)
+  client_key         int REFERENCES dwh.dim_client(client_key),
+
+  -- Mesures niveau ligne expédition
+  refprod            int NOT NULL,
+  qte                int,
+  frais_port_ligne   numeric(12,2),     -- si tu répartis le port au niveau ligne
+  delai_expedition_jours int,           -- (dateenv - datecom) si utile
+  ecart_obj_liv_jours   int,            -- (dateenv - dateobjliv)
+
+  -- Unicité logique au niveau ligne expédiée
+  UNIQUE (nocom, refprod)
 );
 
-CREATE INDEX IF NOT EXISTS ix_fact_ventes_keys
-  ON dwh.fact_ventes (datecom_key, client_key, employe_key, produit_key, categorie_key, fournisseur_key, transporteur_key, geo_key);
-
-CREATE INDEX IF NOT EXISTS ix_fact_livraisons_keys
-  ON dwh.fact_livraisons (datecom_key, dateenv_key, dateobjliv_key, transporteur_key, geo_key, employe_key, client_key);
+CREATE INDEX IF NOT EXISTS ix_fact_livraisons_dimkeys
+  ON dwh.fact_livraisons (dateobjliv_key, dateenv_key, transporteur_key, geo_key, employe_key, client_key, produit_key);

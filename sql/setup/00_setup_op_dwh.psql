@@ -1,0 +1,30 @@
+-- 00_setup_op_dwh.psql
+-- Démarrage "from scratch" avec psql (PostgreSQL installé en local)
+-- À exécuter depuis la **racine du projet** :
+--   psql -U postgres -d postgres -f sql/setup/00_setup_op_dwh.psql
+-- (adaptez -U et -d selon votre rôle/DB d'admin)
+
+-- 1) créer la base (échouera si elle existe déjà — ignorer à la 2e exécution)
+CREATE DATABASE northwind WITH TEMPLATE=template1 ENCODING='UTF8';
+
+-- 2) se connecter à la base cible
+\connect northwind
+
+-- 3) init schémas & extensions
+\i sql/setup/01_adding_schemas.sql
+
+-- 4) opérationnel (tables + chargement + vues)
+\i sql/source_oltp/01_adding_tables_op.sql
+\i sql/source_oltp/02_adding_data_op.sql
+\i sql/source_oltp/03_adding_views_op.sql
+
+-- 5) DWH (création + chargement + vues)
+\i sql/dwh/01_adding_tables_dwh.sql
+\i sql/dwh/02_adding_data_dwh.sql
+\i sql/dwh/03_adding_views_dwh.sql
+
+-- 6) maintenance & tests
+\i sql/maintenance/10_indexes.sql
+\i tests/dq/t01_fk_non_null.sql
+\i tests/dq/t02_no_dup_keys.sql
+\i tests/dq/t03_metrics_consistency.sql

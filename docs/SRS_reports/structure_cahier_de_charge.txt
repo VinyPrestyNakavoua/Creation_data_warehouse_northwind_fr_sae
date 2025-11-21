@@ -1,3 +1,11 @@
+idées :
+analyse
+conception
+implémentation
+intégration et déploiement  
+maintenance
+
+
 idée :
 - analyse fonctionnel
 - besoin

@@ -1,0 +1,1 @@
+on doit connecter le TDB power bi  à la base de données postgresql
